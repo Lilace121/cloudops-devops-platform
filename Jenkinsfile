@@ -1,66 +1,143 @@
 pipeline {
+
     agent any
+
+
+    environment {
+
+        IMAGE_NAME = "cloudops-demo"
+
+        IMAGE_TAG = "v1"
+
+        ACR_REGISTRY = "crpi-38urml8fe00gm6pl.cn-shenzhen.personal.cr.aliyuncs.com"
+
+        ACR_IMAGE = "crpi-38urml8fe00gm6pl.cn-shenzhen.personal.cr.aliyuncs.com/cloudopsczq/cloudops-demo:v1"
+
+    }
+
 
     stages {
 
-        stage('Clone') {
-            steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[
-                        url: 'git@github.com:Lilace121/cloudops-devops-platform.git'
-                    ]],
-                    extensions: [
-                        [$class: 'CloneOption',
-                         shallow: true,
-                         depth: 1,
-                         timeout: 10]
-                    ]
-                ])
-            }
-        }
-
 
         stage('Build') {
+
             steps {
-                echo "开始Maven构建"
 
                 sh '''
                 cd app/cloudops-demo
+
                 mvn clean package -DskipTests
                 '''
+
             }
+
         }
+
 
 
         stage('Docker Build') {
+
             steps {
-                echo "开始Docker镜像构建"
 
                 sh '''
+
                 docker build \
                 -f docker/Dockerfile \
-                -t cloudops-demo:v1 .
+                -t ${IMAGE_NAME}:${IMAGE_TAG} .
+
                 '''
+
             }
+
         }
 
 
-        stage('Deploy') {
+
+        stage('Docker Push') {
+
             steps {
-                echo "开始部署"
 
-                sh '''
-                docker stop cloudops-demo || true
-                docker rm cloudops-demo || true
 
-                docker run -d \
-                --name cloudops-demo \
-                -p 8081:8081 \
-                cloudops-demo:v1
-                '''
+                withCredentials([
+
+                    usernamePassword(
+
+                        credentialsId: 'aliyun-acr',
+
+                        usernameVariable: 'ACR_USER',
+
+                        passwordVariable: 'ACR_PASS'
+
+                    )
+
+                ]) {
+
+
+                    sh '''
+
+                    echo $ACR_PASS | docker login \
+                    --username $ACR_USER \
+                    --password-stdin \
+                    ${ACR_REGISTRY}
+
+
+
+                    docker tag \
+                    ${IMAGE_NAME}:${IMAGE_TAG} \
+                    ${ACR_IMAGE}
+
+
+
+                    docker push ${ACR_IMAGE}
+
+                    '''
+
+                }
+
             }
+
         }
+
+
+
+        stage('Deploy Kubernetes') {
+
+    steps {
+
+        sh '''
+
+        kubectl apply -f k8s/deployment.yaml
+
+        kubectl apply -f k8s/service.yaml
+
+
+        kubectl rollout restart deployment cloudops-demo
+
+
+        '''
+
     }
+
+}
+
+    }
+
+
+    post {
+
+        success {
+
+            echo 'SUCCESS'
+
+        }
+
+
+        failure {
+
+            echo 'FAILED'
+
+        }
+
+    }
+
 }
