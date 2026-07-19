@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: cloudops-demo
+
+spec:
+
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: cloudops-demo
+
+  template:
+
+    metadata:
+      labels:
+        app: cloudops-demo
+
+    spec:
+
+      containers:
+
+      - name: cloudops-demo
+
+        image: cloudops-demo:v1
+
+        imagePullPolicy: IfNotPresent
+
+        ports:
+
+        - containerPort: 8081
