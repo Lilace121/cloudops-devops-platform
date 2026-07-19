@@ -1,0 +1,15 @@
+# Maven
+target/
+
+# Docker
+*.tar
+
+# IDE
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# OS
+.DS_Store
