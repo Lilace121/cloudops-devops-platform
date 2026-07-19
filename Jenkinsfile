@@ -103,6 +103,7 @@ pipeline {
         stage('Deploy Kubernetes') {
 
     steps {
+ echo "开始Kubernetes部署"
 
         sh '''
 
