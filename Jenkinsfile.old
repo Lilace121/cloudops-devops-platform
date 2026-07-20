@@ -7,9 +7,11 @@ pipeline {
 
         IMAGE_NAME = "cloudops-demo"
 
+        IMAGE_TAG = "v1"
+
         ACR_REGISTRY = "crpi-38urml8fe00gm6pl.cn-shenzhen.personal.cr.aliyuncs.com"
 
-        ACR_NAMESPACE = "cloudopsczq"
+        ACR_IMAGE = "crpi-38urml8fe00gm6pl.cn-shenzhen.personal.cr.aliyuncs.com/cloudopsczq/cloudops-demo:v1"
 
     }
 
@@ -22,11 +24,9 @@ pipeline {
             steps {
 
                 sh '''
-
                 cd app/cloudops-demo
 
                 mvn clean package -DskipTests
-
                 '''
 
             }
@@ -43,7 +43,7 @@ pipeline {
 
                 docker build \
                 -f docker/Dockerfile \
-                -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                -t ${IMAGE_NAME}:${IMAGE_TAG} .
 
                 '''
 
@@ -83,14 +83,12 @@ pipeline {
 
 
                     docker tag \
-                    ${IMAGE_NAME}:${BUILD_NUMBER} \
-                    ${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${BUILD_NUMBER}
+                    ${IMAGE_NAME}:${IMAGE_TAG} \
+                    ${ACR_IMAGE}
 
 
 
-                    docker push \
-                    ${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${BUILD_NUMBER}
-
+                    docker push ${ACR_IMAGE}
 
                     '''
 
@@ -104,61 +102,43 @@ pipeline {
 
         stage('Deploy Kubernetes') {
 
+    steps {
+ echo "开始Kubernetes部署"
 
-            steps {
+        sh '''
 
+        kubectl apply -f k8s/deployment.yaml
 
-                echo "开始Kubernetes部署"
-
-
-                sh '''
-
-
-                kubectl apply -f k8s/deployment.yaml
+        kubectl apply -f k8s/service.yaml
 
 
-                kubectl apply -f k8s/service.yaml
+        kubectl rollout restart deployment cloudops-demo
 
 
+        '''
 
-                kubectl set image deployment/cloudops-demo \
-                cloudops-demo=${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${BUILD_NUMBER}
+    }
 
-
-
-                kubectl rollout status deployment/cloudops-demo
-
-
-
-                '''
-
-            }
-
-        }
-
+}
 
     }
 
 
-
     post {
-
 
         success {
 
-            echo "SUCCESS"
+            echo 'SUCCESS'
 
         }
 
 
         failure {
 
-            echo "FAILED"
+            echo 'FAILED'
 
         }
 
-
     }
-
 
 }

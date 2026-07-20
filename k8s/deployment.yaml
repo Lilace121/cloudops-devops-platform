@@ -26,7 +26,7 @@ spec:
 
       - name: cloudops-demo
 
-        image: crpi-38urml8fe00gm6pl.cn-shenzhen.personal.cr.aliyuncs.com/cloudopsczq/cloudops-demo:v1
+        image: crpi-38urml8fe00gm6pl.cn-shenzhen.personal.cr.aliyuncs.com/cloudopsczq/cloudops-demo:latest
 
         imagePullPolicy: Always
 
