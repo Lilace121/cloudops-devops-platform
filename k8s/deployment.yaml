@@ -5,7 +5,6 @@ metadata:
   name: cloudops-demo
 
 spec:
-
   replicas: 2
 
   selector:
@@ -20,13 +19,16 @@ spec:
 
     spec:
 
+      imagePullSecrets:
+      - name: aliyun-acr-secret
+
       containers:
 
       - name: cloudops-demo
 
-        image: cloudops-demo:v1
+        image: crpi-38urml8fe00gm6pl.cn-shenzhen.personal.cr.aliyuncs.com/cloudopsczq/cloudops-demo:v1
 
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
 
         ports:
 
