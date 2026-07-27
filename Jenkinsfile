@@ -13,6 +13,8 @@ pipeline {
 
         ACR_NAMESPACE = "cloudopsczq"
 
+        KUBECONFIG = "/var/lib/jenkins/.kube/config"
+
     }
 
 
@@ -22,6 +24,9 @@ pipeline {
         stage('Build') {
 
             steps {
+
+                echo "开始Maven构建"
+
 
                 sh '''
 
@@ -41,6 +46,9 @@ pipeline {
 
             steps {
 
+                echo "开始Docker镜像构建"
+
+
                 sh '''
 
                 docker build \
@@ -58,6 +66,9 @@ pipeline {
         stage('Docker Push') {
 
             steps {
+
+
+                echo "推送镜像到阿里云ACR"
 
 
                 withCredentials([
@@ -104,10 +115,8 @@ pipeline {
 
 
 
-        stage('Deploy Kubernetes') {
 
-                     environment {
-                     KUBECONFIG = "/var/lib/jenkins/.kube/config"
+        stage('Deploy Kubernetes') {
 
 
             steps {
@@ -118,14 +127,26 @@ pipeline {
 
                 sh '''
 
-                export KUBECONFIG=/var/lib/jenkins/.kube/config
+                export KUBECONFIG=${KUBECONFIG}
+
+
+                echo "检查Kubernetes集群状态"
 
                 kubectl get nodes
 
+
+
+                echo "应用Kubernetes资源"
+
+
                 kubectl apply -f k8s/deployment.yaml
 
-
                 kubectl apply -f k8s/service.yaml
+
+
+
+
+                echo "更新镜像版本"
 
 
 
@@ -134,8 +155,27 @@ pipeline {
 
 
 
+
+                echo "等待滚动发布完成"
+
+
+
                 kubectl rollout status deployment/cloudops-demo
 
+
+
+
+                echo "查看Pod状态"
+
+
+                kubectl get pods -o wide
+
+
+
+                echo "查看Service"
+
+
+                kubectl get svc
 
 
                 '''
@@ -154,14 +194,14 @@ pipeline {
 
         success {
 
-            echo "SUCCESS"
+            echo "SUCCESS: CI/CD部署完成"
 
         }
 
 
         failure {
 
-            echo "FAILED"
+            echo "FAILED: CI/CD部署失败"
 
         }
 
