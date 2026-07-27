@@ -13,8 +13,6 @@ pipeline {
 
         ACR_NAMESPACE = "cloudopsczq"
 
-        KUBECONFIG = "/var/lib/jenkins/.kube/config"
-
     }
 
 
@@ -24,9 +22,6 @@ pipeline {
         stage('Build') {
 
             steps {
-
-                echo "开始Maven构建"
-
 
                 sh '''
 
@@ -46,9 +41,6 @@ pipeline {
 
             steps {
 
-                echo "开始Docker镜像构建"
-
-
                 sh '''
 
                 docker build \
@@ -66,9 +58,6 @@ pipeline {
         stage('Docker Push') {
 
             steps {
-
-
-                echo "推送镜像到阿里云ACR"
 
 
                 withCredentials([
@@ -115,9 +104,7 @@ pipeline {
 
 
 
-
         stage('Deploy Kubernetes') {
-
 
             steps {
 
@@ -127,55 +114,43 @@ pipeline {
 
                 sh '''
 
-                export KUBECONFIG=${KUBECONFIG}
+                echo "检查Kubernetes连接"
 
 
-                echo "检查Kubernetes集群状态"
-
-                kubectl get nodes
-
-
-
-                echo "应用Kubernetes资源"
-
-
-                kubectl apply -f k8s/deployment.yaml
-
-                kubectl apply -f k8s/service.yaml
+                kubectl --kubeconfig=/var/lib/jenkins/.kube/config get nodes
 
 
 
-
-                echo "更新镜像版本"
-
+                echo "部署Deployment"
 
 
-                kubectl set image deployment/cloudops-demo \
+                kubectl --kubeconfig=/var/lib/jenkins/.kube/config apply -f k8s/deployment.yaml
+
+
+
+                echo "部署Service"
+
+
+                kubectl --kubeconfig=/var/lib/jenkins/.kube/config apply -f k8s/service.yaml
+
+
+
+                echo "更新镜像"
+
+
+                kubectl --kubeconfig=/var/lib/jenkins/.kube/config set image deployment/cloudops-demo \
                 cloudops-demo=${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
 
 
-
-                echo "等待滚动发布完成"
-
+                echo "等待发布完成"
 
 
-                kubectl rollout status deployment/cloudops-demo
+                kubectl --kubeconfig=/var/lib/jenkins/.kube/config rollout status deployment/cloudops-demo
 
 
 
-
-                echo "查看Pod状态"
-
-
-                kubectl get pods -o wide
-
-
-
-                echo "查看Service"
-
-
-                kubectl get svc
+                echo "Kubernetes部署完成"
 
 
                 '''
@@ -194,14 +169,14 @@ pipeline {
 
         success {
 
-            echo "SUCCESS: CI/CD部署完成"
+            echo "SUCCESS"
 
         }
 
 
         failure {
 
-            echo "FAILED: CI/CD部署失败"
+            echo "FAILED"
 
         }
 
