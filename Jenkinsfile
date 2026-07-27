@@ -118,6 +118,9 @@ pipeline {
 
                 sh '''
 
+                export KUBECONFIG=/var/lib/jenkins/.kube/config
+
+                kubectl get nodes
 
                 kubectl apply -f k8s/deployment.yaml
 
