@@ -26,9 +26,11 @@ pipeline {
             steps {
 
                 sh '''
+
                 cd app/cloudops-demo
 
                 mvn clean package -DskipTests
+
                 '''
 
             }
@@ -92,6 +94,7 @@ pipeline {
                     docker push \
                     ${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
+
                     '''
 
                 }
@@ -104,39 +107,62 @@ pipeline {
 
         stage('Deploy Kubernetes') {
 
-
             steps {
 
 
                 echo "开始Kubernetes部署"
 
 
+
                 sh '''
 
-                echo "当前KUBECONFIG:"
-                echo $KUBECONFIG
-
-
-                kubectl config view
-
-
-                kubectl get nodes
+                echo "检查Kubernetes连接"
 
 
 
-                kubectl apply -f k8s/deployment.yaml
-
-
-                kubectl apply -f k8s/service.yaml
+                kubectl --kubeconfig=/var/lib/jenkins/.kube/config get nodes
 
 
 
-                kubectl set image deployment/cloudops-demo \
+                echo "应用Deployment"
+
+
+
+                kubectl --kubeconfig=/var/lib/jenkins/.kube/config apply \
+                -f k8s/deployment.yaml
+
+
+
+                echo "应用Service"
+
+
+
+                kubectl --kubeconfig=/var/lib/jenkins/.kube/config apply \
+                -f k8s/service.yaml
+
+
+
+                echo "更新镜像"
+
+
+
+                kubectl --kubeconfig=/var/lib/jenkins/.kube/config \
+                set image deployment/cloudops-demo \
                 cloudops-demo=${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
 
 
-                kubectl rollout status deployment/cloudops-demo
+                echo "等待滚动发布完成"
+
+
+
+                kubectl --kubeconfig=/var/lib/jenkins/.kube/config \
+                rollout status deployment/cloudops-demo
+
+
+
+                echo "Kubernetes部署完成"
+
 
 
                 '''
