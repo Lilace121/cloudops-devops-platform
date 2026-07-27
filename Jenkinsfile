@@ -106,6 +106,9 @@ pipeline {
 
         stage('Deploy Kubernetes') {
 
+                     environment {
+                     KUBECONFIG = "/var/lib/jenkins/.kube/config"
+
 
             steps {
 
