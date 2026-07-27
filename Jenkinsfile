@@ -13,6 +13,8 @@ pipeline {
 
         ACR_NAMESPACE = "cloudopsczq"
 
+        KUBECONFIG = "/var/lib/jenkins/.kube/config"
+
     }
 
 
@@ -24,11 +26,9 @@ pipeline {
             steps {
 
                 sh '''
-
                 cd app/cloudops-demo
 
                 mvn clean package -DskipTests
-
                 '''
 
             }
@@ -58,7 +58,6 @@ pipeline {
         stage('Docker Push') {
 
             steps {
-
 
                 withCredentials([
 
@@ -93,7 +92,6 @@ pipeline {
                     docker push \
                     ${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
-
                     '''
 
                 }
@@ -106,6 +104,7 @@ pipeline {
 
         stage('Deploy Kubernetes') {
 
+
             steps {
 
 
@@ -114,43 +113,30 @@ pipeline {
 
                 sh '''
 
-                echo "检查Kubernetes连接"
+                echo "当前KUBECONFIG:"
+                echo $KUBECONFIG
 
 
-                kubectl --kubeconfig=/var/lib/jenkins/.kube/config get nodes
+                kubectl config view
 
 
-
-                echo "部署Deployment"
-
-
-                kubectl --kubeconfig=/var/lib/jenkins/.kube/config apply -f k8s/deployment.yaml
+                kubectl get nodes
 
 
 
-                echo "部署Service"
+                kubectl apply -f k8s/deployment.yaml
 
 
-                kubectl --kubeconfig=/var/lib/jenkins/.kube/config apply -f k8s/service.yaml
+                kubectl apply -f k8s/service.yaml
 
 
 
-                echo "更新镜像"
-
-
-                kubectl --kubeconfig=/var/lib/jenkins/.kube/config set image deployment/cloudops-demo \
+                kubectl set image deployment/cloudops-demo \
                 cloudops-demo=${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
 
 
-                echo "等待发布完成"
-
-
-                kubectl --kubeconfig=/var/lib/jenkins/.kube/config rollout status deployment/cloudops-demo
-
-
-
-                echo "Kubernetes部署完成"
+                kubectl rollout status deployment/cloudops-demo
 
 
                 '''
