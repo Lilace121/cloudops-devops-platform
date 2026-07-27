@@ -7,6 +7,8 @@ pipeline {
 
         IMAGE_NAME = "cloudops-demo"
 
+        IMAGE_TAG = "v1.0.${BUILD_NUMBER}"
+
         ACR_REGISTRY = "crpi-38urml8fe00gm6pl.cn-shenzhen.personal.cr.aliyuncs.com"
 
         ACR_NAMESPACE = "cloudopsczq"
@@ -43,7 +45,7 @@ pipeline {
 
                 docker build \
                 -f docker/Dockerfile \
-                -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                -t ${IMAGE_NAME}:${IMAGE_TAG} .
 
                 '''
 
@@ -83,13 +85,13 @@ pipeline {
 
 
                     docker tag \
-                    ${IMAGE_NAME}:${BUILD_NUMBER} \
-                    ${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${BUILD_NUMBER}
+                    ${IMAGE_NAME}:${IMAGE_TAG} \
+                    ${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
 
 
                     docker push \
-                    ${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${BUILD_NUMBER}
+                    ${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
 
                     '''
@@ -122,7 +124,7 @@ pipeline {
 
 
                 kubectl set image deployment/cloudops-demo \
-                cloudops-demo=${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${BUILD_NUMBER}
+                cloudops-demo=${ACR_REGISTRY}/${ACR_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}
 
 
 
