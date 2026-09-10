@@ -106,24 +106,27 @@ pipeline {
                 python3 - "${IMAGE_FULL_NAME}" <<'PYUPDATE'
 from pathlib import Path
 import sys
-import re
 
 image = sys.argv[1]
 path = Path("apps/cloudops/deployment.yaml")
-text = path.read_text()
 
-new_text, count = re.subn(
-    r'^(\s*image:\s*).*$',
-    lambda m: m.group(1) + image,
-    text,
-    count=1,
-    flags=re.MULTILINE
-)
+lines = path.read_text().splitlines()
+matches = 0
 
-if count != 1:
-    raise SystemExit(f"expected to update exactly one image line, updated {count}")
+for index, line in enumerate(lines):
+    stripped = line.lstrip()
 
-path.write_text(new_text)
+    if stripped.startswith("image:") and "cloudops-demo" in stripped:
+        indent = line[:len(line) - len(stripped)]
+        lines[index] = f"{indent}image: {image}"
+        matches += 1
+
+if matches != 1:
+    raise SystemExit(
+        f"expected exactly one cloudops-demo image line, found {matches}"
+    )
+
+path.write_text(chr(10).join(lines) + chr(10))
 PYUPDATE
 
                 echo "===== 新镜像 ====="
