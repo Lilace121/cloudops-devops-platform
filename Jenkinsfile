@@ -47,7 +47,34 @@ pipeline {
 
         }
 
-        stage('Docker Push') {
+        stage('Trivy Security Scan') {
+
+        steps {
+
+            sh '''
+            set -e
+
+            echo "===== Trivy Security Gate ====="
+            echo "Scanning image: ${IMAGE_NAME}:${IMAGE_TAG}"
+
+            HTTPS_PROXY=http://192.168.88.1:7897 \
+            HTTP_PROXY=http://192.168.88.1:7897 \
+            trivy image \
+              --timeout 20m \
+              --scanners vuln \
+              --severity HIGH,CRITICAL \
+              --ignore-unfixed \
+              --exit-code 1 \
+              ${IMAGE_NAME}:${IMAGE_TAG}
+
+            echo "===== Trivy Security Gate PASSED ====="
+            '''
+
+        }
+
+    }
+
+    stage('Docker Push') {
 
             steps {
 
