@@ -57,8 +57,12 @@ pipeline {
             echo "===== Trivy Security Gate ====="
             echo "Scanning image: ${IMAGE_NAME}:${IMAGE_TAG}"
 
-            HTTPS_PROXY=http://192.168.88.1:7897 \
-            HTTP_PROXY=http://192.168.88.1:7897 \
+            PROXY_SCHEME=http
+            PROXY_HOST=192.168.88.1:7897
+            PROXY="${PROXY_SCHEME}://${PROXY_HOST}"
+
+            HTTPS_PROXY="$PROXY" \
+            HTTP_PROXY="$PROXY" \
             trivy image \
               --timeout 20m \
               --scanners vuln \
