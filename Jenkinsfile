@@ -78,6 +78,40 @@ pipeline {
 
     }
 
+    stage('Generate SBOM') {
+
+        steps {
+
+            sh '''
+            set -e
+
+            echo "===== Generate CycloneDX SBOM ====="
+            echo "Image: ${IMAGE_NAME}:${IMAGE_TAG}"
+
+            rm -rf sbom
+            mkdir -p sbom
+
+            trivy image \
+              --cache-dir /var/lib/jenkins/.cache/trivy \
+              --skip-db-update \
+              --skip-java-db-update \
+              --format cyclonedx \
+              --output "sbom/${IMAGE_NAME}-${IMAGE_TAG}.cdx.json" \
+              ${IMAGE_NAME}:${IMAGE_TAG}
+
+            echo "===== SBOM Generated ====="
+            ls -lh "sbom/${IMAGE_NAME}-${IMAGE_TAG}.cdx.json"
+            '''
+
+            archiveArtifacts(
+                artifacts: 'sbom/*.cdx.json',
+                fingerprint: true
+            )
+
+        }
+
+    }
+
     stage('Docker Push') {
 
             steps {
