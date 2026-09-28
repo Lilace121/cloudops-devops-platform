@@ -20,6 +20,32 @@ pipeline {
 
     stages {
 
+        stage('Disk Preflight') {
+            steps {
+                sh '''
+                set -e
+
+                echo "===== Disk Preflight ====="
+
+                DISK_USAGE=$(df -P / | awk 'NR==2 {gsub("%","",$5); print $5}')
+                DISK_FREE_KB=$(df -Pk / | awk 'NR==2 {print $4}')
+                DISK_FREE_GB=$((DISK_FREE_KB / 1024 / 1024))
+
+                echo "Root disk usage: ${DISK_USAGE}%"
+                echo "Root disk free:  ${DISK_FREE_GB} GiB"
+
+                if [ "$DISK_USAGE" -ge 80 ]; then
+                    echo "ERROR: root filesystem usage is ${DISK_USAGE}%"
+                    echo "K3s image GC high threshold is 85%."
+                    echo "Please free disk space before building."
+                    exit 1
+                fi
+
+                echo "===== Disk Preflight PASSED ====="
+                '''
+            }
+        }
+
         stage('Build') {
 
             steps {
